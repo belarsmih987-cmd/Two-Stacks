@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Two Stacks</title>
+  <style>
+    body { font-family: sans-serif; background: #f4f4f4; padding: 20px; }
+    h1 { text-align: center; }
+    .zone { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0; }
+    .card {
+      width: 60px; height: 90px;
+      background: white; border: 1px solid #333;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; font-weight: bold;
+      cursor: pointer;
+    }
+    .red { color: red; }
+    .black { color: black; }
+    .controls { margin-top: 20px; text-align: center; }
+    select, button { margin: 5px; padding: 5px 10px; }
+  </style>
+</head>
+<body>
+  <h1>🃏 Two Stacks</h1>
+
+  <div class="controls">
+    <label for="difficulty">Сложность бота:</label>
+    <select id="difficulty">
+      <option value="easy">Лёгкий</option>
+      <option value="normal">Нормальный</option>
+      <option value="insane">Безумный</option>
+    </select>
+    <button onclick="startGame()">Начать игру</button>
+  </div>
+
+  <h2>Центр</h2>
+  <div class="zone" id="center"></div>
+
+  <h2>Твоя рука</h2>
+  <div class="zone" id="playerHand"></div>
+
+  <h2>Рука бота</h2>
+  <div class="zone" id="botHand"></div>
+
+  <script>
+    const suits = ['♠','♣','♥','♦'];
+    const values = ['6','7','8','9','10','J','Q','K','A'];
+    let deck = [], playerHand = [], botHand = [], center = [], turn = 'player', startSuit = '', difficulty = 'easy';
+    let playerAce = null, botAce = null;
+
+    function startGame() {
+      difficulty = document.getElementById('difficulty').value;
+      deck = [];
+      for (let s of suits) for (let v of values) deck.push({suit: s, value: v});
+      shuffle(deck);
+
+      const starter = deck.pop();
+      startSuit = starter.suit;
+      deck.unshift(starter);
+
+      let base = deck.find(c => c.suit === startSuit);
+      deck = deck.filter(c => c !== base);
+
+      let pair = deck.find(c => c.suit === startSuit && isPair(base, c));
+      deck = deck.filter(c => c !== pair);
+      center = [base, pair];
+
+      const aces = deck.filter(c => c.value === 'A');
+      const redAces = aces.filter(c => ['♥','♦'].includes(c.suit));
+      const blackAces = aces.filter(c => ['♠','♣'].includes(c.suit));
+      playerAce = redAces[0];
+      botAce = blackAces[0];
+      deck = deck.filter(c => c !== playerAce && c !== botAce);
+
+      for (let i = 0; i < 6; i++) {
+        playerHand.push(deck.pop());
+        botHand.push(deck.pop());
+      }
+
+      render();
+    }
+
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    }
+
+    function isPair(a, b) {
+      const ai = values.indexOf(a.value);
+      const bi = values.indexOf(b.value);
+      return a.suit === b.suit && (Math.abs(ai - bi) <= 2 || ai === bi);
+    }
+
+    function render() {
+      const centerDiv = document.getElementById('center');
+      const playerDiv = document.getElementById('playerHand');
+      const botDiv = document.getElementById('botHand');
+      centerDiv.innerHTML = '';
+      playerDiv.innerHTML = '';
+      botDiv.innerHTML = '';
+
+      for (let c of center) centerDiv.appendChild(cardEl(c));
+      for (let c of playerHand) {
+        const el = cardEl(c);
+        el.onclick = () => playCard(c);
+        playerDiv.appendChild(el);
+      }
+      for (let c of botHand) botDiv.appendChild(cardEl({suit: c.suit, value: '🂠'}));
+    }
+
+    function cardEl(card) {
+      const el = document.createElement('div');
+      el.className
